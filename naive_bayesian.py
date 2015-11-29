@@ -6,7 +6,7 @@
 #
 
 # Import libraries
-import random, math
+import math
 
 # Initialize the attributes list
 # (source: car.c45-names)
@@ -92,16 +92,13 @@ class nb_classifier:
 		
 # Main function
 if __name__ == "__main__":
-	# Parse data from file:
-	data_file = open("car.data", 'r')
-	db = [line.split(',') for line in data_file.read().splitlines()]
-
-	# Randomly split database into training data and test data:
-	db_size = len(db)
-	db_training_size = int(db_size * 0.2)
-	random.shuffle(db)
-	db_train = db[db_training_size:]
-	db_test = db[:db_training_size]
+	# Parse training and testing data from file:
+	train_file = open("train.data", 'r')
+	test_file = open("test.data", 'r')
+	db_train = [line.split(',') for line in train_file.read().splitlines()]
+	db_test = [line.split(',') for line in test_file.read().splitlines()]
+	train_file.close()
+	test_file.close()
 
 	# Naive Bayesian Classification:
 	nbc = nb_classifier(db_train)
@@ -111,7 +108,7 @@ if __name__ == "__main__":
 	accuracy_test = sum(bool(t[6] == nbc.classify(t)) for t in db_test) / float(len(db_test))
 	print "Accuracy of NB Classifier:"
 	print "	- Training dataset:", accuracy_train
-	print "	- Test dataset:", accuracy_test
+	print "	- Test dataset:", accuracy_test, '\n'
 
 	# Confusion Matrix:
 	conf_mat = {'unacc':{'unacc':0, 'acc':0, 'good':0, 'vgood':0}, 
@@ -126,6 +123,8 @@ if __name__ == "__main__":
 		conf_mat[actual_class][predicted_class] += 1
 
 	# Output confusion matrix
+	print "Confusion Matrix: "
 	print conf_mat
+
 
 
