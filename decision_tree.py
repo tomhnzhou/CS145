@@ -1,109 +1,192 @@
-import random, math
+import math
+import pydot
+import random
 
-attributes = [['vhigh', 'high', 'med', 'low'], 
-				['vhigh', 'high', 'med', 'low'], 
-				['2', '3', '4', '5more'], 
-				['2', '3', '4', 'more'],
-				['small', 'med', 'big'], 
-				['low', 'med', 'high'], 
-				['unacc', 'acc', 'good', 'vgood']]
+attributes = ['buying','maintenance','doors','persons','luggage_boot','safety']
+attr_dict = {'buying':0, 'maintenance':1, 'doors':2, 'persons':3, 'luggage_boot':4, 'safety':5}
+target_attr = 'quality'
 
-# Compute Info(p, n)
-def info(p, n):
-	a = float(p)/(p+n)
-	b = float(n)/(p+n)
-	return -a * math.log(a,2) - b * math.log(b,2)
+def create_decision_tree(db, attributes):
+    """Returns a new decision tree based on the given training database"""
+    vals = [record[6] for record in db]
+    default = majority_value(db)
 
-def filter_db(db, val, attr_index):
-	return [t for t in db if t[attr_index] == val]
+    # If the dataset is empty or the attributes list is empty, return the
+    # default value. When checking the attributes list for emptiness, we
+    # need to subtract 1 to account for the target attribute.
+    if not db or (len(attributes) - 1) <= 0:
+        return default
+    # If all the records in the dataset have the same classification,
+    # return that classification.
+    elif vals.count(vals[0]) == len(vals):
+        return vals[0]
+    else:
+        # Choose the next best attribute to best classify our data
+        best = choose_attribute(db, attributes)
 
-# Returns probability that an attribute at index=attr_index
-# 	in a dataset db is equal to val
-def attr_prob(db, val, attr_index):
-	return sum(bool(t[attr_index] == val) for t in db) / float(len(db))
+        # Create a new decision tree/node with the best attribute and an empty
+        # dictionary object--we'll fill that up next.
+        tree = {best:{}}
 
-class nb_classifier:
-	def __init__(self, db):
-		self.db = db
-		self.cond_prob = self.compute_cond_prob()
-		self.class_prob = self.compute_class_prob()
+        # Create a new decision tree/sub-node for each of the values in the
+        # best attribute field
+        for val in get_values(db, best):
+            # Create a subtree for the current value under the "best" field
+            subtree = create_decision_tree(
+            	get_examples(db, best, val),
+                [attr for attr in attributes if attr != best]
+                )
 
-	# Compute all conditional probabilities: 
-	# Output: 
-	#	prob['acc'][0]['high'] = P(buying = 'high' | 'acc') 
-	#	i.e. prob['acc'][0]['high'] denotes: 
-	#		probability that the attribute at index 0 ('buying')
-	#		is 'high' given an 'acc' class
-	def compute_cond_prob(self):
-		prob = {}
-		for cls in attributes[6]:
-			db_proj = filter_db(self.db, cls, 6)
-			prob[cls] = [{}, {}, {}, {}, {}, {}]
-			for i in range(0, 6):
-				for attr in attributes[i]:
-					prob[cls][i][attr] = attr_prob(db_proj, attr, i)
-					if prob[cls][i][attr] == 0:
-						prob[cls][i][attr] = 0.001
-		#print prob
-		return prob
+            # Add the new subtree to the empty dictionary object in our new
+            # tree/node we just created.
+            tree[best][val] = subtree
 
-	# Compute all class probabilities: 
-	# Output: 
-	#	prob['acc'] = P('acc') 
-	def compute_class_prob(self):
-		prob = {}
-		for cls in attributes[6]:
-			prob[cls] = attr_prob(self.db, cls, 6)
-		#print prob
-		return prob
+    return tree
 
-	# Predict the tuple's class
-	def classify(self, tuple):
-		prob = {}
-		for cls in attributes[6]:
-			prob_tmp = self.class_prob[cls]
-			for i in range(0,6):
-				attr_val = tuple[i]
-				prob_tmp = prob_tmp + math.log(self.cond_prob[cls][i][attr_val])
-			prob[cls] = prob_tmp
-		#print prob
-		return max(prob, key=prob.get)
+def get_examples(db, attr, val):
+	"""Get the subset database for certain attribute with certain value"""
+	attr_num = attr_dict[attr]
+	db_subset = []
 
-		
+	for record in db:
+		if record[attr_num] == val:
+			db_subset.append(record) 
 
-# Parse data from file:
-data_file = open("car.data", 'r')
-db = [line.split(',') for line in data_file.read().splitlines()]
+	return db_subset
 
-# Split database into training data and test data:
-db_size = len(db)
-db_training_size = int(db_size * 0.2)
+def get_values(db, attr):
+	"""Get all possible values of certain attribute in the database"""
+	attr_num = attr_dict[attr]
+	vals = []
 
-random.shuffle(db)
-db_train = db[db_training_size:]
-db_test = db[:db_training_size]
+	for record in db:
+		if record[attr_num] not in vals:
+			vals.append(record[attr_num])
 
-# Naive Bayesian Classification:
-nbc = nb_classifier(db_train)
+	return vals
 
-accuracy_train = sum(bool(t[6] == nbc.classify(t)) for t in db_train) / float(len(db_train))
-accuracy_test = sum(bool(t[6] == nbc.classify(t)) for t in db_test) / float(len(db_test))
-print "Accuracy of NB Classifier:"
-print "Training dataset:", accuracy_train
-print "Test dataset:", accuracy_test
+def choose_attribute(db, attributes):
+	"""Find the best attribute in the given database"""
+	maximum = ('', 0)
 
-# Confusion Matrix:
+	for attr in attributes:
+		gain = info_gain(db, attr)
 
-conf_mat = {'unacc':{'unacc':0, 'acc':0, 'good':0, 'vgood':0}, 
-			'acc':{'unacc':0, 'acc':0, 'good':0, 'vgood':0}, 
-			'good':{'unacc':0, 'acc':0, 'good':0, 'vgood':0}, 
-			'vgood':{'unacc':0, 'acc':0, 'good':0, 'vgood':0}}
+		if gain > maximum[1]:
+			maximum = (attr, gain)
 
-for t in db_test:
-	actual_class = t[6]
-	predicted_class = nbc.classify(t)
-	conf_mat[actual_class][predicted_class] += 1
+	return maximum[0]
 
-print conf_mat
+def majority_value(db):
+	"""Find the majority value of target_attr in database"""
+	temp_map = {}
+	maximum = ('', 0)
+
+	for record in db:
+		val = record[6]
+
+		if val in temp_map:
+			temp_map[val] += 1
+		else:
+			temp_map[val] = 1
+
+		if temp_map[val] > maximum[1]:
+			maximum = (val, temp_map[val])
+
+	return maximum[0]
+
+def entropy(db):
+    """Calculates the entropy of the given data set for the target attribute."""
+    val_freq = {}
+    data_entropy = 0.0
+
+    # Calculate the frequency of each of the values in the target attr
+    for record in db:
+        if (val_freq.has_key(record[6])):
+            val_freq[record[6]] += 1.0
+        else:
+            val_freq[record[6]] = 1.0
+
+    # Calculate the entropy of the data for the target attribute
+    for freq in val_freq.values():
+        data_entropy += (-freq/len(db)) * math.log(freq/len(db), 2) 
+        
+    return data_entropy
+
+def info_gain(db, attr):
+    """Calculates the information gain on the chosen attribute (attr)."""
+    val_freq = {}
+    subset_entropy = 0.0
+    attr_num = attr_dict[attr]
+
+    # Calculate the frequency of each of the values in the target attribute
+    for record in db:
+        if (val_freq.has_key(record[attr_num])):
+            val_freq[record[attr_num]] += 1.0
+        else:
+            val_freq[record[attr_num]] = 1.0
+
+    # Calculate the sum of the entropy for each subset of records weighted
+    # by their probability of occuring in the training set.
+    for val in val_freq.keys():
+        val_prob = val_freq[val] / sum(val_freq.values())
+        db_subset = [record for record in db if record[attr_num] == val]
+        subset_entropy += val_prob * entropy(db_subset)
+
+    # Subtract the entropy of the chosen attribute from the entropy of the
+    # whole data set with respect to the target attribute (and return it)
+    return (entropy(db) - subset_entropy)
+
+def walk_dictionaryv2(graph, dictionary, parent_node=None):
+    '''Recursive plotting function for the decision tree stored as a dictionary'''
+
+    for k in dictionary.keys():
+
+        if parent_node is not None:
+
+            from_name = parent_node.get_name().replace("\"", "") + '_' + str(k)
+            from_label = str(k)
+
+            node_from = pydot.Node(from_name, label = from_label)
+            graph.add_node(node_from)
+
+            graph.add_edge( pydot.Edge(parent_node, node_from) )
+
+            if isinstance(dictionary[k], dict): # if interim node
+                walk_dictionaryv2(graph, dictionary[k], node_from)
+
+            else: # if leaf node
+            	num = random.random()
+
+                to_name = str(k) + str(num) + str(dictionary[k]) # unique name
+                to_label = str(dictionary[k])
+
+                node_to = pydot.Node(to_name, label=to_label, shape='box')
+                graph.add_node(node_to)
+                graph.add_edge(pydot.Edge(node_from, node_to))
+
+                #node_from.set_name(to_name)
+
+        else:
+
+            from_name =  str(k)
+            from_label = str(k)
+
+            node_from = pydot.Node(from_name, label=from_label)
+            walk_dictionaryv2(graph, dictionary[k], node_from)
 
 
+def plot_tree(tree):
+
+    # first you create a new graph, you do that with pydot.Dot()
+    graph = pydot.Dot(graph_type='graph')
+    walk_dictionaryv2(graph, tree)
+    graph.write_png('tree.png')
+
+if __name__ == "__main__":
+	# Parse training and testing data from file:
+	train_file = open("train.data", 'r')
+	db_train = [line.split(',') for line in train_file.read().splitlines()]
+	tree = create_decision_tree(db_train, attributes)
+	# tree= {'salary': {'41k-45k': 'junior', '46k-50k': {'department': {'marketing': 'senior', 'sales': 'senior', 'systems': 'junior'}}, '36k-40k': 'senior', '26k-30k': 'junior', '31k-35k': 'junior', '66k-70k': 'senior'}}
+	plot_tree(tree)
