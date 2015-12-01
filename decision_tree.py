@@ -138,12 +138,11 @@ def info_gain(db, attr):
     return (entropy(db) - subset_entropy)
 
 def walk_dictionaryv2(graph, dictionary, parent_node=None):
-    '''Recursive plotting function for the decision tree stored as a dictionary'''
+    """Recursive plotting function for the decision tree stored as a dictionary"""
 
     for k in dictionary.keys():
 
         if parent_node is not None:
-
             from_name = parent_node.get_name().replace("\"", "") + '_' + str(k)
             from_label = str(k)
 
@@ -152,10 +151,12 @@ def walk_dictionaryv2(graph, dictionary, parent_node=None):
 
             graph.add_edge( pydot.Edge(parent_node, node_from) )
 
-            if isinstance(dictionary[k], dict): # if interim node
+            # if interim node
+            if isinstance(dictionary[k], dict):
                 walk_dictionaryv2(graph, dictionary[k], node_from)
 
-            else: # if leaf node
+            # if leaf node
+            else: 
             	num = random.random()
 
                 to_name = str(k) + str(num) + str(dictionary[k]) # unique name
@@ -164,8 +165,6 @@ def walk_dictionaryv2(graph, dictionary, parent_node=None):
                 node_to = pydot.Node(to_name, label=to_label, shape='box')
                 graph.add_node(node_to)
                 graph.add_edge(pydot.Edge(node_from, node_to))
-
-                #node_from.set_name(to_name)
 
         else:
 
@@ -178,7 +177,7 @@ def walk_dictionaryv2(graph, dictionary, parent_node=None):
 
 def plot_tree(tree):
 
-    # first you create a new graph, you do that with pydot.Dot()
+   # first you create a new graph, you do that with pydot.Dot()
     graph = pydot.Dot(graph_type='graph')
     walk_dictionaryv2(graph, tree)
     graph.write_png('tree.png')
@@ -188,5 +187,4 @@ if __name__ == "__main__":
 	train_file = open("train.data", 'r')
 	db_train = [line.split(',') for line in train_file.read().splitlines()]
 	tree = create_decision_tree(db_train, attributes)
-	# tree= {'salary': {'41k-45k': 'junior', '46k-50k': {'department': {'marketing': 'senior', 'sales': 'senior', 'systems': 'junior'}}, '36k-40k': 'senior', '26k-30k': 'junior', '31k-35k': 'junior', '66k-70k': 'senior'}}
 	plot_tree(tree)
