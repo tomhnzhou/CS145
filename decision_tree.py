@@ -146,7 +146,11 @@ def walk_dictionaryv2(graph, dictionary, parent_node=None):
             from_name = parent_node.get_name().replace("\"", "") + '_' + str(k)
             from_label = str(k)
 
-            node_from = pydot.Node(from_name, label = from_label)
+            if k in attributes:
+                node_from = pydot.Node(from_name, label = from_label)
+            else:
+                node_from = pydot.Node(from_name, label = from_label, shape='plaintext')
+
             graph.add_node(node_from)
 
             graph.add_edge( pydot.Edge(parent_node, node_from) )
