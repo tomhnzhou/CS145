@@ -17,20 +17,22 @@ attributes = [['vhigh', 'high', 'med', 'low'],
 				['small', 'med', 'big'], 
 				['low', 'med', 'high']]
 
-
+# Function: transform the given value to one hot encoding based on the configuration of feature class
+# eg: if the value is 'vhigh', given the feature class being ['vhigh', 'high', 'med', 'low']
+#      the one hot code for it will be 1000
 def oneHotCode(value, featureClass):
 	oneHotCode = ['0']*len(featureClass)
 	oneHotCode[featureClass.index(value)] = '1'
 	return ','.join(oneHotCode)
 	
-
+# Function: transform a database entry in to one hot encoding
 def oneHotEntry(oldEntry, attributes):
 	oneHotEntry=''
 	for index, value in enumerate(oldEntry):
 		oneHotEntry += oneHotCode(value,attributes[index])+','
 	return oneHotEntry
 
-
+# Function: transform the whole data base into one hot encoding
 def oneHotTransformation(db, attributes):
 	oneHotDb = []
 	for entry in db:
