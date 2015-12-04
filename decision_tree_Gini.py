@@ -203,7 +203,6 @@ def walk_dictionaryv2(graph, dictionary, parent_node=None):
                 graph.add_edge(pydot.Edge(node_from, node_to))
 
         else:
-
             from_name =  str(k)
             from_label = str(k)
 
@@ -212,8 +211,7 @@ def walk_dictionaryv2(graph, dictionary, parent_node=None):
 
 
 def plot_tree(tree):
-
-   # first you create a new graph, you do that with pydot.Dot()
+    """plot the decision tree"""
     graph = pydot.Dot(graph_type='graph')
     walk_dictionaryv2(graph, tree)
     graph.write_png('gini.png')
@@ -226,10 +224,11 @@ def accuracy_helper(record, tree, attributes):
             if attr in k:
                 sub_tree = tree[k]
 
-                #Test if reach leaf node
+                # Test if reach leaf node
                 if sub_tree in all_quality:
                     return sub_tree
 
+                # Check if it is a attr or a value
                 if attr in all_attributes:
                     # new_attributes.remove(attr)
                     attr_num = attr_dict[attr]
@@ -252,7 +251,6 @@ def accuracy(db, tree):
     return right_num/(len(db))
 
 if __name__ == "__main__":
-
 	# Parse training and testing data from file:
     train_file = open("train.data", 'r')
     db_train = [line.split(',') for line in train_file.read().splitlines()]
