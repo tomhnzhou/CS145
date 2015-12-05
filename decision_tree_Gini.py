@@ -43,7 +43,7 @@ def create_decision_tree(db, attributes):
             if i == len(subset0) - 1:
                 word1 += subset0[i]
             else:
-                word1 += subset0[i] + '&'
+                word1 += subset0[i] + ' or '
 
         tree[best[0]][word1] = subtree
 
@@ -56,7 +56,7 @@ def create_decision_tree(db, attributes):
             if i == len(subset1) - 1:
                 word2 += subset1[i]
             else:
-                word2 += subset1[i] + '&'
+                word2 += subset1[i] + ' or '
         
         tree[best[0]][word2] = subtree
 
