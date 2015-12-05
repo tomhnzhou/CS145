@@ -1,11 +1,8 @@
 import math
-#import pydot
 import random
 
-attributes = ['buying','maintenance','doors','persons','luggage_boot','safety']
-all_attributes = ['buying','maintenance','doors','persons','luggage_boot','safety']
+
 all_quality = ['unacc', 'acc', 'good', 'vgood']
-attr_dict = {'buying':0, 'maintenance':1, 'doors':2, 'persons':3, 'luggage_boot':4, 'safety':5}
 target_attr = 'quality'
 
 def create_decision_tree(db, attributes):
@@ -172,52 +169,7 @@ def gini(db, attr):
             min_gini = (result, temp_gini)
 
     return min_gini
-'''
-def walk_dictionaryv2(graph, dictionary, parent_node=None):
-    """Recursive plotting function for the decision tree stored as a dictionary"""
 
-    for k in dictionary.keys():
-
-        if parent_node is not None:
-            from_name = parent_node.get_name().replace("\"", "") + '_' + str(k)
-            from_label = str(k)
-
-            node_from = pydot.Node(from_name, label = from_label)
-            graph.add_node(node_from)
-
-            graph.add_edge( pydot.Edge(parent_node, node_from) )
-
-            # if interim node
-            if isinstance(dictionary[k], dict):
-                walk_dictionaryv2(graph, dictionary[k], node_from)
-
-            # if leaf node
-            else: 
-            	num = random.random()
-
-                to_name = str(k) + str(num) + str(dictionary[k]) # unique name
-                to_label = str(dictionary[k])
-
-                node_to = pydot.Node(to_name, label=to_label, shape='box')
-                graph.add_node(node_to)
-                graph.add_edge(pydot.Edge(node_from, node_to))
-
-        else:
-
-            from_name =  str(k)
-            from_label = str(k)
-
-            node_from = pydot.Node(from_name, label=from_label)
-            walk_dictionaryv2(graph, dictionary[k], node_from)
-
-
-def plot_tree(tree):
-
-   # first you create a new graph, you do that with pydot.Dot()
-    graph = pydot.Dot(graph_type='graph')
-    walk_dictionaryv2(graph, tree)
-    graph.write_png('gini.png')
-'''
 def accuracy_helper(record, tree, attributes, all_attributes):
     new_attributes = attributes[:]
 
@@ -264,4 +216,3 @@ if __name__ == "__main__":
     tree = create_decision_tree(db_train, attributes)
 
     print accuracy(db_test, tree, attributes, attributes)
-    #plot_tree(tree)
